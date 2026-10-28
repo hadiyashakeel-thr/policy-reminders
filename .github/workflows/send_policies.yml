@@ -1,0 +1,35 @@
+name: Send daily policy reminders
+
+on:
+  schedule:
+    # 14:05 UTC = 7:05 PM Pakistan time, Monday to Friday
+    - cron: "5 14 * * 1-5"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Test only (prints what would be sent, sends nothing)"
+        type: boolean
+        default: true
+
+jobs:
+  send:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install openpyxl
+      - name: Send policies
+        env:
+          WEBHOOK_PRESTIGE: ${{ secrets.WEBHOOK_PRESTIGE }}
+          WEBHOOK_TEST_FIESTA: ${{ secrets.WEBHOOK_TEST_FIESTA }}
+          WEBHOOK_LENS: ${{ secrets.WEBHOOK_LENS }}
+          WEBHOOK_QUAL_ALIGN: ${{ secrets.WEBHOOK_QUAL_ALIGN }}
+          WEBHOOK_DEMAND_CREW: ${{ secrets.WEBHOOK_DEMAND_CREW }}
+        run: |
+          if [ "${{ github.event.inputs.dry_run }}" = "true" ]; then
+            python policy_sender.py --dry-run
+          else
+            python policy_sender.py
+          fi
